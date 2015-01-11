@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Runtime.Serialization;
+using System.Windows.Media;
 using Vixen.Execution.Context;
 using Vixen.Intent;
 using Vixen.Module.Preview;
@@ -12,6 +13,8 @@ using Vixen.Data.Value;
 using Vixen.Sys;
 using VixenModules.Preview.VixenPreview.Shapes;
 using System.Xml.Serialization;
+using Brush = System.Drawing.Brush;
+using Color = System.Drawing.Color;
 
 namespace VixenModules.Preview.VixenPreview.Shapes
 {
@@ -64,7 +67,9 @@ namespace VixenModules.Preview.VixenPreview.Shapes
 			return p;
 		}
 
-		public int MaxAlpha
+	    public int GLArrayPosition { get; set; }
+
+	    public int MaxAlpha
 		{
 			get
 			{
@@ -156,7 +161,48 @@ namespace VixenModules.Preview.VixenPreview.Shapes
 			set { color = value; }
 		}
 
-		public void Draw(Graphics graphics, Color c)
+	    public List<Color> IntentColors(IIntentStates states)
+	    {
+	        List<Color> returnColors = new List<Color>();
+	        if (_isDiscreteColored)
+	        {
+	            //int col = 1;
+	            //Rectangle drawRect = new Rectangle(drawArea.X, drawArea.Y, drawArea.Width, drawArea.Height);
+	            //// Get states for each color
+	            IEnumerable<Color> colors = IntentHelpers.GetAlphaAffectedDiscreteColorsForIntents(states);
+	            foreach (Color c in colors)
+	            {
+	                if (c != Color.Transparent && c.A > byte.MinValue)
+	                {
+	                    returnColors.Add(c);
+	                    //        fp.DrawCircle(drawRect, c);
+
+	                    //        if (col % 2 == 0)
+	                    //        {
+	                    //            drawRect.Y += PixelSize;
+	                    //            drawRect.X = drawArea.X;
+	                    //        }
+	                    //        else
+	                    //        {
+	                    //            drawRect.X = drawArea.X + PixelSize;
+	                    //        }
+
+	                    //        col++;
+	                }
+	            }
+	        }
+	        else
+	        {
+	            Color intentColor = IntentHelpers.GetAlphaRGBMaxColorForIntents(states);
+	            if (intentColor != Color.Transparent && intentColor.A > 0)
+	            {
+	                returnColors.Add(intentColor);
+	            }
+	        }
+	        return returnColors;
+	    }
+
+	    public void Draw(Graphics graphics, Color c)
 		{
 			graphics.FillEllipse(new SolidBrush(c), drawArea);
 		}

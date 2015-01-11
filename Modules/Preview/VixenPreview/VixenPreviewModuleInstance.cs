@@ -96,7 +96,8 @@ namespace VixenModules.Preview.VixenPreview
 
 				if (UseGDIPreviewRendering)
 				{
-					displayForm = new GDIPreviewForm(GetDataModel());
+					//displayForm = new GDIPreviewForm(GetDataModel());
+                    displayForm = new OpenGLViewer(GetDataModel());
 				}
 				else
 				{
