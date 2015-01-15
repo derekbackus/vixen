@@ -12,6 +12,7 @@ using VixenModules.Preview.VixenPreview.Shapes;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Vixen.Intent;
 
 namespace VixenModules.Preview.VixenPreview
 {
@@ -131,9 +132,9 @@ namespace VixenModules.Preview.VixenPreview
 
         public void UpdatePreview()
         {
-
             double milliseconds = ComputeTimeSlice();
             Accumulate(milliseconds);
+
             IEnumerable<Element> elementArray = VixenSystem.Elements.Where(e => e.State.Any());
 
             if (!elementArray.Any())
@@ -160,12 +161,14 @@ namespace VixenModules.Preview.VixenPreview
 
             try
             {
-                var po = new ParallelOptions
-                {
-                    MaxDegreeOfParallelism = Environment.ProcessorCount
-                };
+                //var po = new ParallelOptions
+                //{
+                //    MaxDegreeOfParallelism = Environment.ProcessorCount
+                //};
 
-                Parallel.ForEach(elementArray, po, element =>
+                // Parallel just doesn't seem to help here...
+                //Parallel.ForEach(elementArray, po, element =>
+                foreach (var element in elementArray)
                 {
                     ElementNode node = VixenSystem.Elements.GetElementNodeForElement(element);
                     if (node != null)
@@ -180,15 +183,16 @@ namespace VixenModules.Preview.VixenPreview
                                 if (colors.Any())
                                 {
                                     // Need to do something here to deal with discrete colors!
-                                    _colors[pixel.GLArrayPosition].R = (float) colors[0].R/byte.MaxValue;
-                                    _colors[pixel.GLArrayPosition].G = (float) colors[0].G/byte.MaxValue;
-                                    _colors[pixel.GLArrayPosition].B = (float) colors[0].B/byte.MaxValue;
-                                    _colors[pixel.GLArrayPosition].A = (float) colors[0].A/byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition].R = (float)colors[0].R / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition].G = (float)colors[0].G / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition].B = (float)colors[0].B / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition].A = (float)colors[0].A / byte.MaxValue;
                                 }
                             }
                         }
                     }
-                });
+                //        });
+                }
             }
             catch (Exception e)
             {
@@ -389,9 +393,7 @@ namespace VixenModules.Preview.VixenPreview
 
             // Enable alpha blending
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            //GL.Enable(EnableCap.SampleAlphaToCoverage);
             GL.Enable(EnableCap.Blend);
-            //GL.Enable(EnableCap.AlphaTest);
             // Enable textures
             GL.Enable(EnableCap.Texture2D);
             // Enable depth testing
@@ -416,12 +418,32 @@ namespace VixenModules.Preview.VixenPreview
             foreach (var pixels in NodeToPixel)
             {
                 PreviewPixel pixel = pixels.Value[0];
-                pixel.GLArrayPosition = pointNum;
-                _points[pointNum].X = (float)pixel.X;
-                _points[pointNum].Y = (float)pixel.Y;
-                _points[pointNum].Z = 0f;
-                _points[pointNum].W = 1f;
-                pointNum++;
+
+                //var _isDiscreteColored = pixel.Node != null ? VixenModules.Property.Color.ColorModule.isElementNodeDiscreteColored(pixel.Node) : false;
+                //if (_isDiscreteColored)
+                //{
+                //    var elementColors = VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(
+                //        pixel.Node, false);
+                //    Console.WriteLine("DiscreteColored: " + elementColors.Count());
+                //    for (var i = 0; i < elementColors.Count(); i++)
+                //    {
+                //        pixel.GLArrayPosition = pointNum;
+                //        _points[pointNum].X = (float)pixel.X;
+                //        _points[pointNum].Y = (float)pixel.Y;
+                //        _points[pointNum].Z = 0f;
+                //        _points[pointNum].W = 1f;
+                //        pointNum++;
+                //    }
+                //}
+                //else
+                //{
+                    pixel.GLArrayPosition = pointNum;
+                    _points[pointNum].X = (float)pixel.X;
+                    _points[pointNum].Y = (float)pixel.Y;
+                    _points[pointNum].Z = 0f;
+                    _points[pointNum].W = 1f;
+                    pointNum++;
+                //}
             }
 
             GL.PointSize(2);
@@ -596,19 +618,22 @@ namespace VixenModules.Preview.VixenPreview
             Bitmap backgroundAlphaImage = null;
             try
             {
-                var backgroundImage = new Bitmap(Data.BackgroundFileName);
-                System.Drawing.Color c;
-                c = System.Drawing.Color.FromArgb(255 - Data.BackgroundAlpha, 0, 0, 0);
-
-                backgroundAlphaImage = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-                Graphics gfx = Graphics.FromImage(backgroundAlphaImage);
-                using (var brush = new SolidBrush(c))
+                if (System.IO.File.Exists(Data.BackgroundFileName))
                 {
-                    gfx.FillRectangle(Brushes.Black, 0, 0, backgroundAlphaImage.Width, backgroundAlphaImage.Height);
-                    gfx.DrawImage(backgroundImage, 0, 0, backgroundImage.Width, backgroundImage.Height);
-                    gfx.FillRectangle(brush, 0, 0, backgroundImage.Width, backgroundImage.Height);
+                    var backgroundImage = new Bitmap(Data.BackgroundFileName);
+                    System.Drawing.Color c;
+                    c = System.Drawing.Color.FromArgb(255 - Data.BackgroundAlpha, 0, 0, 0);
+
+                    backgroundAlphaImage = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                    Graphics gfx = Graphics.FromImage(backgroundAlphaImage);
+                    using (var brush = new SolidBrush(c))
+                    {
+                        gfx.FillRectangle(Brushes.Black, 0, 0, backgroundAlphaImage.Width, backgroundAlphaImage.Height);
+                        gfx.DrawImage(backgroundImage, 0, 0, backgroundImage.Width, backgroundImage.Height);
+                        gfx.FillRectangle(brush, 0, 0, backgroundImage.Width, backgroundImage.Height);
+                    }
+                    gfx.Dispose();
                 }
-                gfx.Dispose();
             }
             catch (Exception ex)
             {

@@ -166,8 +166,6 @@ namespace VixenModules.Preview.VixenPreview.Shapes
 	        List<Color> returnColors = new List<Color>();
 	        if (_isDiscreteColored)
 	        {
-	            //int col = 1;
-	            //Rectangle drawRect = new Rectangle(drawArea.X, drawArea.Y, drawArea.Width, drawArea.Height);
 	            //// Get states for each color
 	            IEnumerable<Color> colors = IntentHelpers.GetAlphaAffectedDiscreteColorsForIntents(states);
 	            foreach (Color c in colors)
@@ -175,19 +173,6 @@ namespace VixenModules.Preview.VixenPreview.Shapes
 	                if (c != Color.Transparent && c.A > byte.MinValue)
 	                {
 	                    returnColors.Add(c);
-	                    //        fp.DrawCircle(drawRect, c);
-
-	                    //        if (col % 2 == 0)
-	                    //        {
-	                    //            drawRect.Y += PixelSize;
-	                    //            drawRect.X = drawArea.X;
-	                    //        }
-	                    //        else
-	                    //        {
-	                    //            drawRect.X = drawArea.X + PixelSize;
-	                    //        }
-
-	                    //        col++;
 	                }
 	            }
 	        }
