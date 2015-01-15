@@ -22,10 +22,14 @@ namespace VixenModules.Preview.VixenPreview
 
         Vector4[] _points;
         private Color4[] _colors;
-        private int[] _vbo = new int[2];
-        private int[] _vao = new int[2];
-        private int _mvLocation = 0;
-        private int _projLocation = 0;
+        private int _vaoProps;
+        private int _vboPropPoints;
+        private int _vboPropColors;
+        private int _vaoBG;
+        private int _vboBGPoints;
+        private int _propMvLocation;
+        private int _propProjLocation;
+        private int _bgProjLocation;
 
         private const string VertexShaderSource =
             "#version 430\n" +
@@ -46,13 +50,42 @@ namespace VixenModules.Preview.VixenPreview
             "in vec4 color;" +
             "out vec4 out_color;" +
             "void main() {" +
+            // We're discarding anything that has rgba of 0 so it doesn't get displayed as black
+            "   if (color.rgb == vec3(0.0,0.0,0.0))" +
+            "       discard; " +
             "   out_color = color;" +
             "}";
 
-        private int _shaderProgram;
+        private const string BGVertexShaderSource =
+            "#version 430\n" +
+            "in vec4 vertex_position;" +
+            "uniform mat4 proj_matrix;" +
+            "in vec2 texCoords;"+
+            "out vec2 texture_coordinates;"+
+            "void main ()" + 
+            "{" +
+            "   texture_coordinates = texCoords;" +
+            "   gl_Position = proj_matrix * vertex_position;" +
+            "}";
 
+        private const string BGFragmentShaderSource =
+            "#version 430\n" +
+            "" +
+            "" +
+            "in vec2 texture_coordinates;" +
+            "uniform sampler2D tex;" +
+            "" +
+            "void main()" +
+            "{" +
+            "   gl_FragColor = texture2D(tex, texture_coordinates);" +
+            //"   gl_FragColor = vec4(1.0, 0, 0, 1);" +
+            "}";
+
+        private int _propShaderProgram;
+        private int _bgShaderProgram;
+        private const int[] NullData = null;
+        private int _colorAttribute;
         private Stopwatch _stopWatch = new Stopwatch();
-        private int _frames = 0;
 
         public OpenGLViewer(VixenPreviewData data)
 		{
@@ -73,17 +106,17 @@ namespace VixenModules.Preview.VixenPreview
             }
         }
 
-        double accumulator = 0;
-        int idleCounter = 0;
+        double _accumulator = 0;
+        int _idleCounter = 0;
         private void Accumulate(double milliseconds)
         {
-            idleCounter++;
-            accumulator += milliseconds;
-            if (accumulator > 1000)
+            _idleCounter++;
+            _accumulator += milliseconds;
+            if (_accumulator > 1000)
             {
-                toolStripStatusFPS.Text = idleCounter.ToString() + " fps";
-                accumulator -= 1000;
-                idleCounter = 0; // don't forget to reset the counter!
+                toolStripStatusFPS.Text = _idleCounter.ToString() + " fps";
+                _accumulator -= 1000;
+                _idleCounter = 0; 
             }
         }
 
@@ -177,34 +210,34 @@ namespace VixenModules.Preview.VixenPreview
             // as it doesn't give a sizeable enough canvas to render on.
             if (Data.Width < 300)
             {
-                if (Background != null && Background.Width > 300)
-                    Data.Width = Background.Width;
-                else
+                //if (Background != null && Background.Width > 300)
+                //    Data.Width = Background.Width;
+                //else
                     Data.Width = 400;
             }
 
             if (Data.SetupWidth < 300)
             {
-                if (Background != null && Background.Width > 300)
-                    Data.SetupWidth = Background.Width;
-                else
+                //if (Background != null && Background.Width > 300)
+                //    Data.SetupWidth = Background.Width;
+                //else
                     Data.SetupWidth = 400;
             }
 
-            if (Data.Height < 200)
+            if (Data.Height < 100)
             {
-                if (Background != null && Background.Height > 200)
-                    Data.Height = Background.Height;
-                else
-                    Data.Height = 300;
+                //if (Background != null && Background.Height > 200)
+                //    Data.Height = Background.Height;
+                //else
+                    Data.Height = 100;
             }
 
-            if (Data.SetupHeight < 200)
+            if (Data.SetupHeight < 100)
             {
-                if (Background != null && Background.Height > 200)
-                    Data.SetupHeight = Background.Height;
-                else
-                    Data.SetupHeight = 300;
+                //if (Background != null && Background.Height > 200)
+                //    Data.SetupHeight = Background.Height;
+                //else
+                    Data.SetupHeight = 100;
             }
 
             if (Data.Left < minX || Data.Left > maxX)
@@ -235,8 +268,6 @@ namespace VixenModules.Preview.VixenPreview
 
         public void Reload()
         {
-            Console.WriteLine("Reload");
-
             if (NodeToPixel == null)
                 throw new System.ArgumentException("PreviewBase.NodeToPixel == null");
 
@@ -280,14 +311,7 @@ namespace VixenModules.Preview.VixenPreview
                 toolStripStatusPixels.Text = pixelCount.ToString() + " lights";
             }
 
-            //gdiControl.BackgroundAlpha = Data.BackgroundAlpha;
-            //if (System.IO.File.Exists(Data.BackgroundFileName))
-            //    gdiControl.Background = Image.FromFile(Data.BackgroundFileName);
-            //else
-            //    gdiControl.Background = null;
-
             CreateAlphaBackground();
-
             AddPropsToViewport();
         }
 
@@ -296,7 +320,6 @@ namespace VixenModules.Preview.VixenPreview
         /// </summary>
         public void LayoutProps()
         {
-            Console.WriteLine("LayoutProps");
             if (DisplayItems != null)
             {
                 foreach (DisplayItem item in DisplayItems)
@@ -328,6 +351,8 @@ namespace VixenModules.Preview.VixenPreview
 
             Data.Width = Width;
             Data.Height = Height;
+
+            ResizeViewport();
         }
 
         private void OpenGLViewer_Move(object sender, EventArgs e)
@@ -355,12 +380,36 @@ namespace VixenModules.Preview.VixenPreview
 
         private void AddPropsToViewport()
         {
-            //Console.WriteLine("AddPropsToViewport 1");
+            SetupPropsVAO();
+            SetupBackgroundVAO();
+            SetPropsProjectionMatrix();
+            SetBackgroundProjectionMatrix();
+
+            GL.Viewport(0, 0, glControl.Width, glControl.Height);
+
+            // Enable alpha blending
+            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+            //GL.Enable(EnableCap.SampleAlphaToCoverage);
+            GL.Enable(EnableCap.Blend);
+            //GL.Enable(EnableCap.AlphaTest);
+            // Enable textures
+            GL.Enable(EnableCap.Texture2D);
+            // Enable depth testing
+            GL.Enable(EnableCap.DepthTest);
+        }
+
+        private void ResizeViewport()
+        {
+            GL.Viewport(0, 0, glControl.Width, glControl.Height);
+            SetPropsProjectionMatrix();
+            SetBackgroundProjectionMatrix();
+        }
+
+        private void SetupPropsVAO()
+        {
             if (!_glLoaded) return;
 
             int numPoints = NodeToPixel.Count;
-
-            //Console.WriteLine("AddPropsToViewport: " + numPoints);
 
             Array.Resize(ref _points, numPoints);
             int pointNum = 0;
@@ -379,23 +428,10 @@ namespace VixenModules.Preview.VixenPreview
 
             Array.Resize(ref _colors, numPoints);
 
-            // Create a number of vertex array objects
-            GL.GenVertexArrays(_vao.Length, _vao);
-            // Bind the first one [0]
-            GL.BindVertexArray(_vao[0]);
-
-            // Generate buffers for the _vao
-            GL.GenBuffers(_vao.Length, _vbo);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo[0]);
-            int pointsLen = _points.Length * Vector4.SizeInBytes;
-            int colorsLen = _colors.Length * Vector4.SizeInBytes;
-            int[] nullData = null;
-            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(pointsLen + colorsLen), nullData, BufferUsageHint.StaticDraw);
-
-            // Transfer the vertex positions:
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(0), new IntPtr(pointsLen), _points);
-            // Transfer the vertex colors:
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(pointsLen), new IntPtr(colorsLen), _colors);
+            // Create a vertex array object for our props
+            _vaoProps = GL.GenVertexArray();
+            // Bind it (set it active)
+            GL.BindVertexArray(_vaoProps);
 
             var vs = GL.CreateShader(ShaderType.VertexShader);
             GL.ShaderSource(vs, VertexShaderSource);
@@ -405,44 +441,129 @@ namespace VixenModules.Preview.VixenPreview
             GL.ShaderSource(fs, FragmentShaderSource);
             GL.CompileShader(fs);
 
-            _shaderProgram = GL.CreateProgram();
-            GL.AttachShader(_shaderProgram, fs);
-            GL.AttachShader(_shaderProgram, vs);
-            GL.LinkProgram(_shaderProgram);
-            GL.UseProgram(_shaderProgram);
+            _propShaderProgram = GL.CreateProgram();
+            GL.AttachShader(_propShaderProgram, fs);
+            GL.AttachShader(_propShaderProgram, vs);
+            GL.LinkProgram(_propShaderProgram);
+            GL.UseProgram(_propShaderProgram);
 
-            // Get the location of the attributes that enters in the vertex shader
-            int positionAttribute = GL.GetAttribLocation(_shaderProgram, "vertex_position");
-            //Console.WriteLine("position_attribute: " + positionAttribute);
-            // Specify how the data for position can be accessed
+            int positionAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_position");
+            int pointsLen = _points.Length * Vector4.SizeInBytes;
+            _colorAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_color");
+            int colorsLen = _colors.Length * Vector4.SizeInBytes;
+            _vboPropPoints = GL.GenBuffer();
+            _vboPropColors = GL.GenBuffer();
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropPoints);
+            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(pointsLen), _points, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
+            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(colorsLen), _colors, BufferUsageHint.StaticDraw);
+            
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropPoints);
             GL.VertexAttribPointer(positionAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
-            // Enable the attribute
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
+            GL.VertexAttribPointer(_colorAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
+
             GL.EnableVertexAttribArray(positionAttribute);
+            GL.EnableVertexAttribArray(_colorAttribute);
 
-            // Color attribute
-            int colorAttribute = GL.GetAttribLocation(_shaderProgram, "vertex_color");
-            //Console.WriteLine("color_attribute: " + colorAttribute);
-            GL.VertexAttribPointer(colorAttribute, 4, VertexAttribPointerType.Float, false, 0, pointsLen);
-            GL.EnableVertexAttribArray(colorAttribute);
+            //
+            // Setup the Matrix for projection, rotation, etc.
+            //
+            _propMvLocation = GL.GetUniformLocation(_propShaderProgram, "mv_matrix");
+            _propProjLocation = GL.GetUniformLocation(_propShaderProgram, "proj_matrix");
+        }
 
-            _mvLocation = GL.GetUniformLocation(_shaderProgram, "mv_matrix");
-            _projLocation = GL.GetUniformLocation(_shaderProgram, "proj_matrix");
-            //Console.WriteLine("_mv_Location: " + _mvLocation);
-            //Console.WriteLine("_projLocation: " + _projLocation);
-
-            GL.Viewport(0, 0, glControl.Width, glControl.Height);
-
-            // Enable alpha blending
-            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            GL.Enable(EnableCap.Blend);
-            // Enable textures
-            GL.Enable(EnableCap.Texture2D);
+        private void SetPropsProjectionMatrix()
+        {
+            GL.UseProgram(_propShaderProgram);
 
             var modelViewMatrix = Matrix4.Identity;
-            GL.UniformMatrix4(_mvLocation, false, ref modelViewMatrix);
+            GL.UniformMatrix4(_propMvLocation, false, ref modelViewMatrix);
 
             var projectionMatrix = Matrix4.CreateOrthographicOffCenter(0, glControl.Width, glControl.Height, 0, 0.0f, 100f);
-            GL.UniformMatrix4(_projLocation, false, ref projectionMatrix);
+            GL.UniformMatrix4(_propProjLocation, false, ref projectionMatrix);            
+        }
+        
+        private void SetupBackgroundVAO()
+        {
+            if (!_glLoaded) return;
+
+            var bmpWidth = 0;
+            var bmpHeight = 0;
+            LoadBackgroundTexture(out bmpWidth, out bmpHeight);
+
+            if (bmpWidth > 0 && bmpHeight > 0)
+            {
+                var vs = GL.CreateShader(ShaderType.VertexShader);
+                GL.ShaderSource(vs, BGVertexShaderSource);
+                GL.CompileShader(vs);
+                var fs = GL.CreateShader(ShaderType.FragmentShader);
+                GL.ShaderSource(fs, BGFragmentShaderSource);
+                GL.CompileShader(fs);
+
+                _bgShaderProgram = GL.CreateProgram();
+                GL.AttachShader(_bgShaderProgram, vs);
+                GL.AttachShader(_bgShaderProgram, fs);
+                GL.LinkProgram(_bgShaderProgram);
+                GL.UseProgram(_bgShaderProgram);
+
+                // Create the vao for the background geometry
+                _vaoBG = GL.GenVertexArray();
+                GL.BindVertexArray(_vaoBG);
+
+                var bgPoints = new Vector4[]
+                {
+                    new Vector4(0f, 0f, -10f, 1f),
+                    new Vector4(bmpWidth, 0, -10f, 1f),
+                    new Vector4(bmpWidth, bmpHeight, -10f, 1f),
+                    new Vector4(0f, bmpHeight, -10f, 1f),
+                };
+
+                int bgPointsLen = bgPoints.Length*Vector4.SizeInBytes;
+                var positionAttribute = GL.GetAttribLocation(_bgShaderProgram, "vertex_position");
+
+                _vboBGPoints = GL.GenBuffer();
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, _vboBGPoints);
+                GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(bgPointsLen), bgPoints, BufferUsageHint.StaticDraw);
+
+                GL.BindBuffer(BufferTarget.ArrayBuffer, _vboBGPoints);
+                GL.VertexAttribPointer(positionAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
+
+                GL.EnableVertexAttribArray(positionAttribute);
+
+                // OpenGL needs texture coordinates to place the texture (picture) on the geometry
+                float[] texCoords =
+                {
+                    0.0f, 0.0f,
+                    1.0f, 0.0f,
+                    1.0f, 1.0f,
+                    0.0f, 1.0f,
+                };
+                var texCoordsLen = texCoords.Length*sizeof (float);
+                var texCoordsLocation = GL.GetAttribLocation(_bgShaderProgram, "texCoords");
+                var texVBO = GL.GenBuffer();
+                GL.BindBuffer(BufferTarget.ArrayBuffer, texVBO);
+                GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(texCoordsLen), texCoords, BufferUsageHint.StaticDraw);
+                GL.BindBuffer(BufferTarget.ArrayBuffer, texVBO);
+                GL.VertexAttribPointer(texCoordsLocation, 2, VertexAttribPointerType.Float, false, 0, 0);
+                GL.EnableVertexAttribArray(texCoordsLocation);
+
+
+                //
+                // Setup the Matrix for projection, rotation, etc.
+                //
+                _bgProjLocation = GL.GetUniformLocation(_bgShaderProgram, "proj_matrix");
+            }
+        }
+
+        private void SetBackgroundProjectionMatrix()
+        {
+            GL.UseProgram(_bgShaderProgram);
+            var projectionMatrix = Matrix4.CreateOrthographicOffCenter(0, glControl.Width, glControl.Height, 0, 0.0f,
+                100f);
+            GL.UniformMatrix4(_bgProjLocation, false, ref projectionMatrix);
         }
 
         private void Render()
@@ -451,134 +572,84 @@ namespace VixenModules.Preview.VixenPreview
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            var pointsLen = _points.Length * Vector4.SizeInBytes;
+            // Display the props
             var colorsLen = _colors.Length * Vector4.SizeInBytes;
-
-            // We're transffering just the point colors. The points are already in the GPU memory
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(pointsLen), new IntPtr(colorsLen), _colors);
-
-            //GL.Rotate(180, 0f, 1f, 0f);
+            // Set our program for this output
+            GL.UseProgram(_propShaderProgram);
+            GL.BindVertexArray(_vaoProps);
+            // Send the new colors to the GPU
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(0), new IntPtr(colorsLen), _colors);
+            // Finally, draw the points
             GL.DrawArrays(PrimitiveType.Points, 0, _points.Length);
 
-            //GL.BindTexture(TextureTarget.Texture2D, texture);
-            //GL.Enable(EnableCap.DepthTest);
-            GL.Begin(PrimitiveType.Quads);
-            GL.Color3(Color.Red);
-            //GL.TexCoord2(0, 0);
-            GL.Vertex2(0, 0);
-
-            //GL.TexCoord2(1, 0);
-            GL.Vertex2(glControl.Width/2, 0);
-
-            //GL.TexCoord2(1, 1);
-            GL.Vertex2(glControl.Width/2, glControl.Height/2);
-
-            //GL.TexCoord2(0, 1);
-            GL.Vertex2(0, glControl.Height/2);
-            GL.End();
+            // Display the background
+            GL.BindVertexArray(_vaoBG);
+            GL.UseProgram(_bgShaderProgram);
+            GL.DrawArraysInstanced(PrimitiveType.Quads, 0, 4, 2);
 
             glControl.SwapBuffers();
         }
 
-        private Image _background;
-        public Image Background
+        public Bitmap CreateAlphaBackground()
         {
-            get
+            Bitmap backgroundAlphaImage = null;
+            try
             {
-                return _background;
-            }
-            set
-            {
-                if (value == null)
+                var backgroundImage = new Bitmap(Data.BackgroundFileName);
+                System.Drawing.Color c;
+                c = System.Drawing.Color.FromArgb(255 - Data.BackgroundAlpha, 0, 0, 0);
+
+                backgroundAlphaImage = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                Graphics gfx = Graphics.FromImage(backgroundAlphaImage);
+                using (var brush = new SolidBrush(c))
                 {
-                    //DefaultBackground = true;
-                    _background = new Bitmap(Width, Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-
-                    Graphics gfx = Graphics.FromImage(_background);
-                    gfx.Clear(System.Drawing.Color.Black);
-                    gfx.Dispose();
+                    gfx.FillRectangle(Brushes.Black, 0, 0, backgroundAlphaImage.Width, backgroundAlphaImage.Height);
+                    gfx.DrawImage(backgroundImage, 0, 0, backgroundImage.Width, backgroundImage.Height);
+                    gfx.FillRectangle(brush, 0, 0, backgroundImage.Width, backgroundImage.Height);
                 }
-                else
-                {
-                    //DefaultBackground = false;
-                    _background = value;
-                }
-                CreateAlphaBackground();
+                gfx.Dispose();
             }
+            catch (Exception ex)
+            {
+                // The iamge was not found, oh no!
+            }
+            return backgroundAlphaImage;
         }
 
-        private int _backgroundAlpha;
-        public int BackgroundAlpha
+        private int _textureID = -1;
+        public void LoadBackgroundTexture(out int bmpWidth, out int bmpHeight)
         {
-            get
+            _textureID = -1;
+            var bmp = CreateAlphaBackground();
+            bmpWidth = 0;
+            bmpHeight = 0;
+            if (bmp != null)
             {
-                return _backgroundAlpha;
+                bmpWidth = bmp.Width;
+                bmpHeight = bmp.Height;
+
+                //Generate empty texture
+                _textureID = GL.GenTexture();
+                //Link empty texture to texture2d
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GL.BindTexture(TextureTarget.Texture2D, _textureID);
+
+                //Must be set else the texture will show glColor
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter,
+                    (int) TextureMinFilter.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter,
+                    (int) TextureMagFilter.Linear);
+
+                BitmapData bmp_data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+                //Describe to gl what we want the bound texture to look like
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, bmp_data.Width, bmp_data.Height, 0,
+                    OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmp_data.Scan0);
+
+                bmp.UnlockBits(bmp_data);
             }
-            set
-            {
-                _backgroundAlpha = value;
-                if (Background != null) CreateAlphaBackground();
-            }
-        }
-
-        private Bitmap _backgroundAlphaImage;
-        public void CreateAlphaBackground()
-        {
-            if (Background != null)
-            {
-            //    System.Drawing.Color c;
-            //    c = System.Drawing.Color.FromArgb(255 - BackgroundAlpha, 0, 0, 0);
-
-            //    //_backgroundAlphaImage = new Bitmap(Background.Width, Background.Height, PixelFormat.Format32bppPArgb);
-            //    _backgroundAlphaImage = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb);
-            //    Graphics gfx = Graphics.FromImage(_backgroundAlphaImage);
-            //    using (SolidBrush brush = new SolidBrush(c))
-            //    {
-            //        gfx.FillRectangle(Brushes.Black, 0, 0, _backgroundAlphaImage.Width, _backgroundAlphaImage.Height);
-            //        gfx.DrawImage(Background, 0, 0, Background.Width, Background.Height);
-            //        gfx.FillRectangle(brush, 0, 0, Background.Width, Background.Height);
-            //    }
-            //    gfx.Dispose();
-            //}
-            //else
-            //{
-            //    _backgroundAlphaImage = new Bitmap(Width, Height, PixelFormat.Format32bppPArgb);
-            //    Graphics gfx = Graphics.FromImage(_backgroundAlphaImage);
-            //    gfx.Clear(Color.Black);
-            //    gfx.Dispose();
-            }
-            //_fastPixel = new FastPixel.FastPixel(_backgroundAlphaImage.Width, _backgroundAlphaImage.Height);
-
-            texture = LoadTexture(Data.BackgroundFileName);
-            Console.WriteLine("TextureID: " + texture);
-
-        }
-
-        private int texture = 0;
-        public int LoadTexture(string file)
-        {
-            if (String.IsNullOrEmpty(file))
-                throw new ArgumentException(file);
-
-            //Generate empty texture
-            int id = GL.GenTexture();
-            //Link empty texture to texture2d
-            GL.BindTexture(TextureTarget.Texture2D, id);
-
-            //Must be set else the texture will show glColor
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-
-            Bitmap bmp = new Bitmap(file);
-            BitmapData bmp_data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            //Describe to gl what we want the bound texture to look like
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, bmp_data.Width, bmp_data.Height, 0,
-                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bmp_data.Scan0);
-
-            bmp.UnlockBits(bmp_data);
-
-            return id;
         }
 
     }

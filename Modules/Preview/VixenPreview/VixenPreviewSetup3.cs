@@ -78,6 +78,7 @@ namespace VixenModules.Preview.VixenPreview {
 			Properties.Settings settings = new Properties.Settings();
 
 			useDirect2DPreviewRenderingToolStripMenuItem.Checked = !settings.UseGDIRendering;
+		    useHardwareAcceleratedPreviewToolStripMenuItem.Checked = !settings.UseGDIRendering;
 			saveLocationsToolStripMenuItem.Checked = Data.SaveLocations;
 
 			// Choose the select tool to start
@@ -482,6 +483,19 @@ namespace VixenModules.Preview.VixenPreview {
             labelZoomLevel.Text = zoomPercent + "%";
             trackerZoom.Value = Convert.ToInt32(zoomPercent);
             trackerZoom.Invalidate();
+        }
+
+        private void useHardwareAcceleratedPreviewToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var msg = MessageBox.Show("Preview will be restarted. This is a system-wide change that will apply to all previews. Are you sure you want to do this?", "Change Preview", MessageBoxButtons.YesNo);
+            if (msg == System.Windows.Forms.DialogResult.Yes)
+            {
+                var settings = new Properties.Settings();
+                settings.UseGDIRendering = !settings.UseGDIRendering;
+                settings.Save();
+                useHardwareAcceleratedPreviewToolStripMenuItem.Checked =
+                    !settings.UseGDIRendering;
+            }
         }
 	}
 }

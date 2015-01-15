@@ -71,10 +71,10 @@ namespace VixenModules.Preview.VixenPreview
 		{
 			get {
 				 
-				// if (new Properties.Settings().UseGDIRendering)
+				 if (new Properties.Settings().UseGDIRendering)
 					return true;
 
-				// return !Vixen.Sys.VixenSystem.VersionBeyondWindowsXP;
+				return !Vixen.Sys.VixenSystem.VersionBeyondWindowsXP;
 			}
 		}
 
@@ -96,13 +96,14 @@ namespace VixenModules.Preview.VixenPreview
 
 				if (UseGDIPreviewRendering)
 				{
-					//displayForm = new GDIPreviewForm(GetDataModel());
-                    displayForm = new OpenGLViewer(GetDataModel());
+					displayForm = new GDIPreviewForm(GetDataModel());
 				}
 				else
 				{
-					displayForm = new VixenPreviewDisplayD2D();
-					displayForm.Data = GetDataModel();
+                    displayForm = new OpenGLViewer(GetDataModel());
+
+                    //displayForm = new VixenPreviewDisplayD2D();
+                    //displayForm.Data = GetDataModel();
 				}
 
 				displayForm.Setup();
