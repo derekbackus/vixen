@@ -630,6 +630,11 @@ namespace VixenModules.Preview.VixenPreview
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+            // Display the background
+            GL.BindVertexArray(_vaoBG);
+            GL.UseProgram(_bgShaderProgram);
+            GL.DrawArraysInstanced(PrimitiveType.Quads, 0, 4, 2);
+
             // Display the props
             var colorsLen = _colors.Length * Vector4.SizeInBytes;
             // Set our program for this output
@@ -640,11 +645,6 @@ namespace VixenModules.Preview.VixenPreview
             GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(0), new IntPtr(colorsLen), _colors);
             // Finally, draw the points
             GL.DrawArrays(PrimitiveType.Points, 0, _points.Length);
-
-            // Display the background
-            GL.BindVertexArray(_vaoBG);
-            GL.UseProgram(_bgShaderProgram);
-            GL.DrawArraysInstanced(PrimitiveType.Quads, 0, 4, 2);
 
             glControl.SwapBuffers();
         }
