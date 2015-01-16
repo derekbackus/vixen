@@ -36,6 +36,7 @@ namespace VixenModules.Preview.VixenPreview
             "#version 430\n" +
             "in vec4 vertex_position;" +
             "in vec4 vertex_color;" +
+            "in float point_size;" +
             "" +
             "uniform mat4 mv_matrix;" +
             "uniform mat4 proj_matrix;" +
@@ -43,6 +44,7 @@ namespace VixenModules.Preview.VixenPreview
             "out vec4 color;" +
             "void main() {" +
             "   gl_Position = proj_matrix * mv_matrix * vertex_position;" +
+            "   gl_PointSize = point_size;" +
             "   color = vertex_color;" +
             "}";
 
@@ -178,15 +180,17 @@ namespace VixenModules.Preview.VixenPreview
                         {
                             foreach (PreviewPixel pixel in pixels)
                             {
-                                List<System.Drawing.Color> colors = pixel.IntentColors(element.State);
+                                List<System.Drawing.Color> elementColors = pixel.IntentColors(element.State);
 
-                                if (colors.Any())
+                                int arrayPosOffset = 0;
+                                foreach (var color in elementColors)
                                 {
                                     // Need to do something here to deal with discrete colors!
-                                    _colors[pixel.GLArrayPosition].R = (float)colors[0].R / byte.MaxValue;
-                                    _colors[pixel.GLArrayPosition].G = (float)colors[0].G / byte.MaxValue;
-                                    _colors[pixel.GLArrayPosition].B = (float)colors[0].B / byte.MaxValue;
-                                    _colors[pixel.GLArrayPosition].A = (float)colors[0].A / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition + arrayPosOffset].R = (float)color.R / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition + arrayPosOffset].G = (float)color.G / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition + arrayPosOffset].B = (float)color.B / byte.MaxValue;
+                                    _colors[pixel.GLArrayPosition + arrayPosOffset].A = (float)color.A / byte.MaxValue;
+                                    arrayPosOffset++;
                                 }
                             }
                         }
@@ -282,7 +286,6 @@ namespace VixenModules.Preview.VixenPreview
 
             if (DisplayItems != null)
             {
-                LayoutProps();
                 int pixelCount = 0;
                 foreach (DisplayItem item in DisplayItems)
                 {
@@ -317,20 +320,6 @@ namespace VixenModules.Preview.VixenPreview
 
             CreateAlphaBackground();
             AddPropsToViewport();
-        }
-
-        /// <summary>
-        /// Tells every prop to find the location for each pixel
-        /// </summary>
-        public void LayoutProps()
-        {
-            if (DisplayItems != null)
-            {
-                foreach (DisplayItem item in DisplayItems)
-                {
-                    item.Shape.Layout();
-                }
-            }
         }
 
         private void glControl_Load(object sender, EventArgs e)
@@ -398,6 +387,8 @@ namespace VixenModules.Preview.VixenPreview
             GL.Enable(EnableCap.Texture2D);
             // Enable depth testing
             GL.Enable(EnableCap.DepthTest);
+            // Enable variable point size
+            GL.Enable(EnableCap.VertexProgramPointSize);
         }
 
         private void ResizeViewport()
@@ -411,44 +402,76 @@ namespace VixenModules.Preview.VixenPreview
         {
             if (!_glLoaded) return;
 
-            int numPoints = NodeToPixel.Count;
+            // Figure out how much memory we need!
+            int numPoints = 0;
+            foreach (var pixels in NodeToPixel)
+            {
+                foreach (var pixel in pixels.Value)
+                {
+                    if (pixel.IsDiscreteColored)
+                    {
+                        var elementColors =
+                            VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(pixel.Node, false);
+                        numPoints += elementColors.Count();
+                    }
+                    else
+                    {
+                        numPoints++;
+                    }
+                }
+            }
 
             Array.Resize(ref _points, numPoints);
+            Array.Resize(ref _colors, numPoints);
+            var pointSizes = new float[numPoints];
+                        
             int pointNum = 0;
             foreach (var pixels in NodeToPixel)
             {
-                PreviewPixel pixel = pixels.Value[0];
-
-                //var _isDiscreteColored = pixel.Node != null ? VixenModules.Property.Color.ColorModule.isElementNodeDiscreteColored(pixel.Node) : false;
-                //if (_isDiscreteColored)
-                //{
-                //    var elementColors = VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(
-                //        pixel.Node, false);
-                //    Console.WriteLine("DiscreteColored: " + elementColors.Count());
-                //    for (var i = 0; i < elementColors.Count(); i++)
-                //    {
-                //        pixel.GLArrayPosition = pointNum;
-                //        _points[pointNum].X = (float)pixel.X;
-                //        _points[pointNum].Y = (float)pixel.Y;
-                //        _points[pointNum].Z = 0f;
-                //        _points[pointNum].W = 1f;
-                //        pointNum++;
-                //    }
-                //}
-                //else
-                //{
+                foreach (var pixel in pixels.Value)
+                {
                     pixel.GLArrayPosition = pointNum;
-                    _points[pointNum].X = (float)pixel.X;
-                    _points[pointNum].Y = (float)pixel.Y;
-                    _points[pointNum].Z = 0f;
-                    _points[pointNum].W = 1f;
-                    pointNum++;
-                //}
+
+                    if (pixel.IsDiscreteColored)
+                    {
+                        var elementColors =
+                            VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(pixel.Node, false);
+                        int origPointNum = 0;
+                        for (var i = 0; i < elementColors.Count(); i++)
+                        {
+                            pointSizes[pointNum] = pixel.PixelSize;
+                            if (i == 0)
+                            {
+                                origPointNum = pointNum;
+                                _points[pointNum].X = (float) pixel.X;
+                                _points[pointNum].Y = (float) pixel.Y;
+                            }
+                            else if (i%2 == 0)
+                            {
+                                _points[pointNum].X = _points[pointNum - i].X;
+                                _points[pointNum].Y = _points[origPointNum].Y + pixel.PixelSize;
+                            }
+                            else
+                            {
+                                _points[pointNum].X = _points[pointNum - 1].X + pixel.PixelSize;
+                                _points[pointNum].Y = _points[pointNum - 1].Y;
+                            }
+                            _points[pointNum].Z = 0f;
+                            _points[pointNum].W = 1f;
+                            pointNum++;
+                        }
+                    }
+                    else
+                    {
+                        pointSizes[pointNum] = pixel.PixelSize;
+                        _points[pointNum].X = (float) pixel.X;
+                        _points[pointNum].Y = (float) pixel.Y;
+                        _points[pointNum].Z = 0f;
+                        _points[pointNum].W = 1f;
+                        pointNum++;
+                    }
+                }
             }
-
-            GL.PointSize(2);
-
-            Array.Resize(ref _colors, numPoints);
 
             // Create a vertex array object for our props
             _vaoProps = GL.GenVertexArray();
@@ -469,25 +492,33 @@ namespace VixenModules.Preview.VixenPreview
             GL.LinkProgram(_propShaderProgram);
             GL.UseProgram(_propShaderProgram);
 
-            int positionAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_position");
-            int pointsLen = _points.Length * Vector4.SizeInBytes;
-            _colorAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_color");
-            int colorsLen = _colors.Length * Vector4.SizeInBytes;
+            var positionAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_position");
+            var pointsLen = _points.Length * Vector4.SizeInBytes;
             _vboPropPoints = GL.GenBuffer();
+            _colorAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_color");
+            var colorsLen = _colors.Length * Vector4.SizeInBytes;
             _vboPropColors = GL.GenBuffer();
+            var pointSizeLen = pointSizes.Length * sizeof(float);
+            var pointSizeAttribute = GL.GetAttribLocation(_propShaderProgram, "point_size");
+            var vboPropSize = GL.GenBuffer();
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropPoints);
             GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(pointsLen), _points, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
             GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(colorsLen), _colors, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboPropSize);
+            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(pointSizeLen), pointSizes, BufferUsageHint.StaticDraw);
             
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropPoints);
             GL.VertexAttribPointer(positionAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
             GL.VertexAttribPointer(_colorAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vboPropSize);
+            GL.VertexAttribPointer(pointSizeAttribute, 1, VertexAttribPointerType.Float, false, 0, 0);
 
             GL.EnableVertexAttribArray(positionAttribute);
             GL.EnableVertexAttribArray(_colorAttribute);
+            GL.EnableVertexAttribArray(pointSizeAttribute);
 
             //
             // Setup the Matrix for projection, rotation, etc.

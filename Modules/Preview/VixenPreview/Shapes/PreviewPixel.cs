@@ -87,7 +87,13 @@ namespace VixenModules.Preview.VixenPreview.Shapes
 			set { _nodeId = value; }
 		}
 
-		public ElementNode Node
+	    public bool IsDiscreteColored
+	    {
+	        get { return _isDiscreteColored; }
+	        set { _isDiscreteColored = value; }
+	    }
+
+	    public ElementNode Node
 		{
 			get
 			{

@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Drawing;
 using Vixen.Sys;
 using System.Runtime.Serialization;
-using System.Diagnostics;
 using System.ComponentModel;
-using System.Windows.Forms;
 using System.Drawing.Design;
-using System.Windows.Forms.Design;
 
 namespace VixenModules.Preview.VixenPreview.Shapes
 {
