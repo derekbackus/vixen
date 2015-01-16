@@ -33,7 +33,7 @@ namespace VixenModules.Preview.VixenPreview
         private int _bgProjLocation;
 
         private const string VertexShaderSource =
-            "#version 430\n" +
+            "#version 400\n" +
             "in vec4 vertex_position;" +
             "in vec4 vertex_color;" +
             "in float point_size;" +
@@ -49,7 +49,7 @@ namespace VixenModules.Preview.VixenPreview
             "}";
 
         private const string FragmentShaderSource =
-            "#version 430\n" +
+            "#version 400\n" +
             "in vec4 color;" +
             "out vec4 out_color;" +
             "void main() {" +
@@ -60,7 +60,7 @@ namespace VixenModules.Preview.VixenPreview
             "}";
 
         private const string BGVertexShaderSource =
-            "#version 430\n" +
+            "#version 400\n" +
             "in vec4 vertex_position;" +
             "uniform mat4 proj_matrix;" +
             "in vec2 texCoords;"+
@@ -72,7 +72,7 @@ namespace VixenModules.Preview.VixenPreview
             "}";
 
         private const string BGFragmentShaderSource =
-            "#version 430\n" +
+            "#version 400\n" +
             "" +
             "" +
             "in vec2 texture_coordinates;" +
@@ -325,6 +325,11 @@ namespace VixenModules.Preview.VixenPreview
         private void glControl_Load(object sender, EventArgs e)
         {
             _glLoaded = true;
+
+            int major, minor;
+            GL.GetInteger(GetPName.MajorVersion, out major);
+            GL.GetInteger(GetPName.MinorVersion, out minor);
+            toolStripStatusLabelOpenGLVersion.Text = "OpenGL Version: " + major + "." + minor;
 
             Reload();
 

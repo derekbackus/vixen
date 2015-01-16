@@ -1,11 +1,15 @@
 ﻿using System;
+using System.Windows;
 using System.Windows.Forms;
 using System.Diagnostics;
+using OpenTK;
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
 using Vixen.Execution.Context;
 using Vixen.Module.Preview;
 using Vixen.Sys;
 using Vixen.Sys.Instrumentation;
-using VixenModules.Preview.VixenPreview.Direct2D;
+using OpenTK.Platform;
 
 namespace VixenModules.Preview.VixenPreview
 {
@@ -74,9 +78,30 @@ namespace VixenModules.Preview.VixenPreview
 				 if (new Properties.Settings().UseGDIRendering)
 					return true;
 
-				return !Vixen.Sys.VixenSystem.VersionBeyondWindowsXP;
+				return !OpenGLAvailable(new Version(4, 0));
 			}
 		}
+
+	    private bool OpenGLAvailable(Version versionRequired)
+	    {
+	        try
+	        {
+	            using (var control = new GLControl())
+	            {
+	                control.MakeCurrent();
+	                int major, minor;
+	                GL.GetInteger(GetPName.MajorVersion, out major);
+	                GL.GetInteger(GetPName.MinorVersion, out minor);
+	                var version = new Version(major, minor);
+	                return (version.CompareTo(versionRequired) >= 0);
+	            }
+	        }
+	        catch (Exception ex)
+	        {
+	            return false;
+	        }
+	    }
+
 
 		protected override Form Initialize()
 		{

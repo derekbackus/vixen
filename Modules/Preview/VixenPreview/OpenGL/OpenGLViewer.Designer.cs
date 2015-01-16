@@ -32,6 +32,7 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusFPS = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusPixels = new System.Windows.Forms.ToolStripStatusLabel();
+            this.toolStripStatusLabelOpenGLVersion = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -52,7 +53,8 @@
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatusFPS,
-            this.toolStripStatusPixels});
+            this.toolStripStatusPixels,
+            this.toolStripStatusLabelOpenGLVersion});
             this.statusStrip1.Location = new System.Drawing.Point(0, 473);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(886, 25);
@@ -62,14 +64,20 @@
             // toolStripStatusFPS
             // 
             this.toolStripStatusFPS.Name = "toolStripStatusFPS";
-            this.toolStripStatusFPS.Size = new System.Drawing.Size(151, 20);
-            this.toolStripStatusFPS.Text = "toolStripStatusLabel1";
+            this.toolStripStatusFPS.Size = new System.Drawing.Size(32, 20);
+            this.toolStripStatusFPS.Text = "FPS";
             // 
             // toolStripStatusPixels
             // 
             this.toolStripStatusPixels.Name = "toolStripStatusPixels";
-            this.toolStripStatusPixels.Size = new System.Drawing.Size(151, 20);
-            this.toolStripStatusPixels.Text = "toolStripStatusLabel1";
+            this.toolStripStatusPixels.Size = new System.Drawing.Size(48, 20);
+            this.toolStripStatusPixels.Text = "Lights";
+            // 
+            // toolStripStatusLabelOpenGLVersion
+            // 
+            this.toolStripStatusLabelOpenGLVersion.Name = "toolStripStatusLabelOpenGLVersion";
+            this.toolStripStatusLabelOpenGLVersion.Size = new System.Drawing.Size(115, 20);
+            this.toolStripStatusLabelOpenGLVersion.Text = "OpenGL Version";
             // 
             // OpenGLViewer
             // 
@@ -97,5 +105,6 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusFPS;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusPixels;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelOpenGLVersion;
     }
 }
