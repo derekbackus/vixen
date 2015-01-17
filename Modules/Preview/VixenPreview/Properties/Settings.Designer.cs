@@ -25,13 +25,25 @@ namespace VixenModules.Preview.VixenPreview.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
         public bool UseGDIRendering {
             get {
                 return ((bool)(this["UseGDIRendering"]));
             }
             set {
                 this["UseGDIRendering"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ShowPropsWhenInactive {
+            get {
+                return ((bool)(this["ShowPropsWhenInactive"]));
+            }
+            set {
+                this["ShowPropsWhenInactive"] = value;
             }
         }
     }

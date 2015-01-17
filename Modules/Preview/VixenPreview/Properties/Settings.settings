@@ -3,7 +3,10 @@
   <Profiles />
   <Settings>
     <Setting Name="UseGDIRendering" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="ShowPropsWhenInactive" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
     </Setting>
   </Settings>
 </SettingsFile>
