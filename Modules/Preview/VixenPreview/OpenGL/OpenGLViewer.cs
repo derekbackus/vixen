@@ -611,7 +611,7 @@ namespace VixenModules.Preview.VixenPreview
                     new Vector4(0f, bmpHeight, -10f, 1f),
                 };
 
-                int bgPointsLen = bgPoints.Length*Vector4.SizeInBytes;
+                var bgPointsLen = bgPoints.Length*Vector4.SizeInBytes;
                 var positionAttribute = GL.GetAttribLocation(_bgShaderProgram, "vertex_position");
 
                 _vboBGPoints = GL.GenBuffer();
