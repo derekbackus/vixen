@@ -10,9 +10,7 @@ using OpenTK.Graphics.OpenGL;
 using Vixen.Sys;
 using VixenModules.Preview.VixenPreview.Shapes;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using Vixen.Intent;
 
 namespace VixenModules.Preview.VixenPreview
 {
@@ -21,8 +19,8 @@ namespace VixenModules.Preview.VixenPreview
         private static NLog.Logger Logging = NLog.LogManager.GetCurrentClassLogger();
         private bool _glLoaded = false;
 
-        Vector4[] _quads;
         private Color4[] _colors;
+        private int _quadLen;
         private int _vaoProps;
         private int _vboPropQuads;
         private int _vboPropColors;
@@ -31,6 +29,11 @@ namespace VixenModules.Preview.VixenPreview
         private int _propMvLocation;
         private int _propProjLocation;
         private int _bgProjLocation;
+        private int _propShaderProgram;
+        private int _bgShaderProgram;
+        private const int[] NullData = null;
+        private int _colorAttribute;
+        private Stopwatch _stopWatch = new Stopwatch();
 
         private const string VertexShaderSource =
             "#version 400\n" +
@@ -71,6 +74,9 @@ namespace VixenModules.Preview.VixenPreview
             "in vec2 texture_coordinates;" +
             "out vec4 out_color;" +
             "void main() {" +
+            // Discard the color information if it is black.
+            "   if (color.rgb == vec3(0f,0f,0f))" +
+            "       discard;" +
             // We need to make a pretty circle. Otherwise, our whole quad will be colored.
             "   float d = distance(texture_coordinates, vec2(0.5, 0.5));" +
             "   float radius = .5; " +
@@ -102,14 +108,7 @@ namespace VixenModules.Preview.VixenPreview
             "void main()" +
             "{" +
             "   gl_FragColor = texture2D(tex, texture_coordinates);" +
-            //"   gl_FragColor = vec4(1.0, 0, 0, 1);" +
             "}";
-
-        private int _propShaderProgram;
-        private int _bgShaderProgram;
-        private const int[] NullData = null;
-        private int _colorAttribute;
-        private Stopwatch _stopWatch = new Stopwatch();
 
         public OpenGLViewer(VixenPreviewData data)
 		{
@@ -324,36 +323,32 @@ namespace VixenModules.Preview.VixenPreview
 
             if (DisplayItems != null)
             {
-                int pixelCount = 0;
+                var pixelCount = 0;
                 foreach (DisplayItem item in DisplayItems)
                 {
                     item.Shape.Layout();
                     if (item.Shape.Pixels == null)
                         throw new System.ArgumentException("item.Shape.Pixels == null");
 
-                    foreach (PreviewPixel pixel in item.Shape.Pixels)
+                    foreach (var pixel in item.Shape.Pixels.Where(pixel => pixel.Node != null))
                     {
-                        if (pixel.Node != null)
+                        pixelCount++;
+                        List<PreviewPixel> pixels;
+                        if (NodeToPixel.TryGetValue(pixel.Node, out pixels))
                         {
-                            pixelCount++;
-                            List<PreviewPixel> pixels;
-                            if (NodeToPixel.TryGetValue(pixel.Node, out pixels))
+                            if (!pixels.Contains(pixel))
                             {
-                                if (!pixels.Contains(pixel))
-                                {
-                                    pixels.Add(pixel);
-                                }
-                            }
-                            else
-                            {
-                                pixels = new List<PreviewPixel>();
                                 pixels.Add(pixel);
-                                NodeToPixel.TryAdd(pixel.Node, pixels);
                             }
+                        }
+                        else
+                        {
+                            pixels = new List<PreviewPixel> {pixel};
+                            NodeToPixel.TryAdd(pixel.Node, pixels);
                         }
                     }
                 }
-                toolStripStatusPixels.Text = pixelCount.ToString() + " lights";
+                toolStripStatusPixels.Text = pixelCount + " lights";
             }
 
             CreateAlphaBackground();
@@ -406,12 +401,10 @@ namespace VixenModules.Preview.VixenPreview
 
         private void OpenGLViewer_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (e.CloseReason == CloseReason.UserClosing)
-            {
-                MessageBox.Show("The preview can only be closed from the Preview Configuration dialog.", "Close",
-                                MessageBoxButtons.OKCancel);
-                e.Cancel = true;
-            }
+            if (e.CloseReason != CloseReason.UserClosing) return;
+            MessageBox.Show("The preview can only be closed from the Preview Configuration dialog.", "Close",
+                MessageBoxButtons.OKCancel);
+            e.Cancel = true;
         }
 
         private void AddPropsToViewport()
@@ -441,18 +434,18 @@ namespace VixenModules.Preview.VixenPreview
             SetBackgroundProjectionMatrix();
         }
 
-        private void AddQuad(int pointNum, int size, float x, float y, float z, float w)
+        private void AddQuad(ref Vector4[] quads, int pointNum, int size, float x, float y, float z, float w)
         {
-            int sizeToGrow = size;
+            var sizeToGrow = size;
             var pointPos = pointNum*4;
             // Offset this quad so our vertexes are in the center
-            int offset = -(sizeToGrow / 2);
+            var offset = -(sizeToGrow / 2);
             x += offset;
             y += offset;
-            _quads[pointPos].Wxyz = new Vector4(w, x, y, z);
-            _quads[pointPos + 1].Wxyz = new Vector4(w, x + sizeToGrow, y, z);
-            _quads[pointPos + 2].Wxyz = new Vector4(w, x + sizeToGrow, y + sizeToGrow, z);
-            _quads[pointPos + 3].Wxyz = new Vector4(w, x, y + sizeToGrow, z);
+            quads[pointPos].Wxyz = new Vector4(w, x, y, z);
+            quads[pointPos + 1].Wxyz = new Vector4(w, x + sizeToGrow, y, z);
+            quads[pointPos + 2].Wxyz = new Vector4(w, x + sizeToGrow, y + sizeToGrow, z);
+            quads[pointPos + 3].Wxyz = new Vector4(w, x, y + sizeToGrow, z);
         }
 
         private void SetupPropsVAO()
@@ -460,79 +453,69 @@ namespace VixenModules.Preview.VixenPreview
             if (!_glLoaded) return;
 
             // Figure out how much memory we need!
-            int numPoints = 0;
-            foreach (var pixels in NodeToPixel)
+            var numPoints = 0;
+            foreach (var pixel in NodeToPixel.SelectMany(pixels => pixels.Value))
             {
-                foreach (var pixel in pixels.Value)
+                if (pixel.IsDiscreteColored)
                 {
-                    if (pixel.IsDiscreteColored)
-                    {
-                        var elementColors =
-                            VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(pixel.Node, false);
-                        numPoints += elementColors.Count();
-                    }
-                    else
-                    {
-                        numPoints++;
-                    }
+                    var elementColors =
+                        Property.Color.ColorModule.getValidColorsForElementNode(pixel.Node, false);
+                    numPoints += elementColors.Count();
+                }
+                else
+                {
+                    numPoints++;
                 }
             }
 
-            //Array.Resize(ref _quads, numPoints * 4);
-            _quads = new Vector4[numPoints * 4];
-            //Array.Resize(ref _colors, numPoints);
+            var quads = new Vector4[numPoints * 4];
             _colors = new Color4[numPoints * 4];
             var pointSizes = new float[numPoints];
 
             float x, y;
             float z = 0f;
             float w = 1f;
-            int pointNum = 0;
-            foreach (var pixels in NodeToPixel)
+            var pointNum = 0;
+            foreach (var pixel in NodeToPixel.SelectMany(pixels => pixels.Value))
             {
-                foreach (var pixel in pixels.Value)
-                {
-                    pixel.GLArrayPosition = pointNum;
+                pixel.GLArrayPosition = pointNum;
 
-                    if (pixel.IsDiscreteColored)
+                if (pixel.IsDiscreteColored)
+                {
+                    var elementColors =
+                        VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(pixel.Node, false);
+                    var origY = 0f;
+                    var lastX = 0f;
+                    var lastY = 0f;
+                    for (var i = 0; i < elementColors.Count(); i++)
                     {
-                        var elementColors =
-                            VixenModules.Property.Color.ColorModule.getValidColorsForElementNode(pixel.Node, false);
-                        float origX = 0;
-                        float origY = 0f;
-                        float lastX = 0;
-                        float lastY = 0f;
-                        for (var i = 0; i < elementColors.Count(); i++)
+                        pointSizes[pointNum] = pixel.PixelSize;
+                        if (i == 0)
                         {
-                            pointSizes[pointNum] = pixel.PixelSize;
-                            if (i == 0)
-                            {
-                                origX = pixel.X;
-                                origY = pixel.Y;
-                                x = (float) pixel.X;
-                                y = (float) pixel.Y;
-                            }
-                            else if (i%2 == 0)
-                            {
-                                x = lastX;
-                                y = origY + pixel.PixelSize;
-                            }
-                            else
-                            {
-                                x = lastX + pixel.PixelSize;
-                                y = lastY;
-                            }
-                            AddQuad(pointNum, pixel.PixelSize, x, y, z, w);
-                            pointNum++;
-                            lastX = x;
-                            lastY = y;
+                            origY = pixel.Y;
+                            x = (float) pixel.X;
+                            y = (float) pixel.Y;
                         }
-                    }
-                    else
-                    {
-                        AddQuad(pointNum, pixel.PixelSize, pixel.X, pixel.Y, z, w);
+                        else if (i%2 == 0)
+                        {
+                            x = lastX;
+                            y = origY + pixel.PixelSize;
+                        }
+                        else
+                        {
+                            x = lastX + pixel.PixelSize;
+                            y = lastY;
+                        }
+                        AddQuad(ref quads, pointNum, pixel.PixelSize, x, y, z, w);
                         pointNum++;
+                        lastX = x;
+                        lastY = y;
                     }
+                }
+                else
+                {
+                    AddQuad(ref quads, pointNum, pixel.PixelSize, pixel.X, pixel.Y, z, w);
+                    pointNum++;
                 }
             }
 
@@ -544,50 +527,36 @@ namespace VixenModules.Preview.VixenPreview
             var vs = GL.CreateShader(ShaderType.VertexShader);
             GL.ShaderSource(vs, VertexShaderSource);
             GL.CompileShader(vs);
-            Console.WriteLine(GL.GetError().ToString());
 
-            int fs = GL.CreateShader(ShaderType.FragmentShader);
+            var fs = GL.CreateShader(ShaderType.FragmentShader);
             GL.ShaderSource(fs, FragmentShaderSource);
             GL.CompileShader(fs);
-            Console.WriteLine(GL.GetError().ToString());
 
             _propShaderProgram = GL.CreateProgram();
             GL.AttachShader(_propShaderProgram, fs);
             GL.AttachShader(_propShaderProgram, vs);
             GL.LinkProgram(_propShaderProgram);
             GL.UseProgram(_propShaderProgram);
-            Console.WriteLine(GL.GetError().ToString());
 
             var positionAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_position");
-            var quadsLen = _quads.Length * Vector4.SizeInBytes;
+            _quadLen = quads.Length * Vector4.SizeInBytes;
             _vboPropQuads = GL.GenBuffer();
             _colorAttribute = GL.GetAttribLocation(_propShaderProgram, "vertex_color");
             var colorsLen = _colors.Length * Vector4.SizeInBytes;
             _vboPropColors = GL.GenBuffer();
-            //var pointSizeLen = pointSizes.Length * sizeof(float);
-            //var pointSizeAttribute = GL.GetAttribLocation(_propShaderProgram, "point_size");
-            //var vboPropSize = GL.GenBuffer();
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropQuads);
-            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(quadsLen), _quads, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(_quadLen), quads, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
             GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(colorsLen), _colors, BufferUsageHint.StaticDraw);
-            //GL.BindBuffer(BufferTarget.ArrayBuffer, vboPropSize);
-            //GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(pointSizeLen), pointSizes, BufferUsageHint.StaticDraw);
             
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropQuads);
             GL.VertexAttribPointer(positionAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
             GL.VertexAttribPointer(_colorAttribute, 4, VertexAttribPointerType.Float, false, 0, 0);
-            //GL.BindBuffer(BufferTarget.ArrayBuffer, vboPropSize);
-            //GL.VertexAttribPointer(pointSizeAttribute, 1, VertexAttribPointerType.Float, false, 0, 0);
 
             GL.EnableVertexAttribArray(positionAttribute);
             GL.EnableVertexAttribArray(_colorAttribute);
-            //GL.EnableVertexAttribArray(pointSizeAttribute);
-
-
-
 
             //
             // Setup the Matrix for projection, rotation, etc.
@@ -708,8 +677,7 @@ namespace VixenModules.Preview.VixenPreview
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vboPropColors);
             GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(0), new IntPtr(colorsLen), _colors);
             // Finally, draw the points
-            GL.DrawArrays(PrimitiveType.Quads, 0, _quads.Length);
-            //Console.WriteLine(GL.GetError().ToString());
+            GL.DrawArrays(PrimitiveType.Quads, 0, _quadLen);
             glControl.SwapBuffers();
         }
 
@@ -785,15 +753,11 @@ namespace VixenModules.Preview.VixenPreview
             var cbItem = new ToolStripControlHost(chkBox);
             cbItem.Alignment = ToolStripItemAlignment.Right;
             statusStrip.Items.Insert(statusStrip.Items.Count-1, cbItem);
-            //chkBox.Checked = new Properties.Settings().ShowPropsWhenInactive;
             chkBox.Checked = ShowPropsWhenInactive;
         }
 
         private void ShowPropsWhenInactive_CheckedChanged(Object sender, EventArgs e)
         {
-            //var settings = new Properties.Settings();
-            //settings.ShowPropsWhenInactive = (sender as CheckBox).Checked;
-            //settings.Save();
             ShowPropsWhenInactive = (sender as CheckBox).Checked;
         }
 
