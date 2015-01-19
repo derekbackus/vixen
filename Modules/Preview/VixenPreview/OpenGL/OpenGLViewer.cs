@@ -36,7 +36,7 @@ namespace VixenModules.Preview.VixenPreview
         private Stopwatch _stopWatch = new Stopwatch();
 
         private const string VertexShaderSource =
-            "#version 400\n" +
+            "#version 330\n" +
             "in vec4 vertex_position;" +
             "in vec4 vertex_color;" +
             "out vec2 texture_coordinates;" +
@@ -69,7 +69,7 @@ namespace VixenModules.Preview.VixenPreview
             "}";
 
         private const string FragmentShaderSource =
-            "#version 400\n" +
+            "#version 330\n" +
             "in vec4 color;" +
             "in vec2 texture_coordinates;" +
             "out vec4 out_color;" +
@@ -87,7 +87,7 @@ namespace VixenModules.Preview.VixenPreview
             "}";
 
         private const string BGVertexShaderSource =
-            "#version 400\n" +
+            "#version 330\n" +
             "in vec4 vertex_position;" +
             "uniform mat4 proj_matrix;" +
             "in vec2 texCoords;"+
@@ -99,7 +99,7 @@ namespace VixenModules.Preview.VixenPreview
             "}";
 
         private const string BGFragmentShaderSource =
-            "#version 400\n" +
+            "#version 330\n" +
             "" +
             "" +
             "in vec2 texture_coordinates;" +
@@ -414,6 +414,8 @@ namespace VixenModules.Preview.VixenPreview
             SetPropsProjectionMatrix();
             SetBackgroundProjectionMatrix();
 
+            glControl.MakeCurrent();
+
             GL.Viewport(0, 0, glControl.Width, glControl.Height);
 
             // Enable alpha blending
@@ -429,6 +431,8 @@ namespace VixenModules.Preview.VixenPreview
 
         private void ResizeViewport()
         {
+            glControl.MakeCurrent();
+
             GL.Viewport(0, 0, glControl.Width, glControl.Height);
             SetPropsProjectionMatrix();
             SetBackgroundProjectionMatrix();
@@ -451,6 +455,8 @@ namespace VixenModules.Preview.VixenPreview
         private void SetupPropsVAO()
         {
             if (!_glLoaded) return;
+
+            glControl.MakeCurrent();
 
             // Figure out how much memory we need!
             var numPoints = 0;
@@ -567,6 +573,8 @@ namespace VixenModules.Preview.VixenPreview
 
         private void SetPropsProjectionMatrix()
         {
+            glControl.MakeCurrent();
+
             GL.UseProgram(_propShaderProgram);
 
             var modelViewMatrix = Matrix4.Identity;
@@ -579,6 +587,8 @@ namespace VixenModules.Preview.VixenPreview
         private void SetupBackgroundVAO()
         {
             if (!_glLoaded) return;
+
+            glControl.MakeCurrent();
 
             var bmpWidth = 0;
             var bmpHeight = 0;
@@ -651,6 +661,7 @@ namespace VixenModules.Preview.VixenPreview
 
         private void SetBackgroundProjectionMatrix()
         {
+            glControl.MakeCurrent();
             GL.UseProgram(_bgShaderProgram);
             var projectionMatrix = Matrix4.CreateOrthographicOffCenter(0, glControl.Width, glControl.Height, 0, 0.0f,
                 100f);
@@ -660,6 +671,8 @@ namespace VixenModules.Preview.VixenPreview
         private void Render()
         {
             if (!_glLoaded) return;
+
+            glControl.MakeCurrent();
 
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
@@ -713,6 +726,8 @@ namespace VixenModules.Preview.VixenPreview
         private int _textureID = -1;
         public void LoadBackgroundTexture(out int bmpWidth, out int bmpHeight)
         {
+            glControl.MakeCurrent();
+
             _textureID = -1;
             var bmp = CreateAlphaBackground();
             bmpWidth = 0;

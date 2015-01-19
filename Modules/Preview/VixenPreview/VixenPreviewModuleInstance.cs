@@ -78,7 +78,7 @@ namespace VixenModules.Preview.VixenPreview
 				 if (new Properties.Settings().UseGDIRendering)
 					return true;
 
-				return !OpenGLAvailable(new Version(4, 0));
+				return !OpenGLAvailable(new Version(3, 3));
 			}
 		}
 
