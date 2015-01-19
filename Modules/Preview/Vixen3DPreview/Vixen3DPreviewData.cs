@@ -1,14 +1,14 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
+using System.Runtime.Serialization;
 using Vixen.Module;
+using Vixen3DPreview.Props;
 
 namespace Vixen3DPreview
 {
 	[DataContract]
 	public class Vixen3DPreviewData : ModuleDataModelBase
 	{
-		public Vixen3DPreviewData()
-		{
-		}
+        private List<PropBase> _props = new List<PropBase>(); 
 
 		public override IModuleDataModel Clone()
 		{
@@ -46,5 +46,12 @@ namespace Vixen3DPreview
 
 		[DataMember]
 		public bool SaveLocations { get; set; }
+
+	    [DataMember]
+	    public List<PropBase> Props
+	    {
+            get { return _props ?? (_props = new List<PropBase>()); }
+            set { _props = value ?? (_props = new List<PropBase>()); }
+        } 
 	}
 }

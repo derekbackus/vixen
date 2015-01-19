@@ -136,6 +136,7 @@ namespace Vixen3DPreview
             _fpsStopwatch.Start();
             return timeslice;
         }
+
         #endregion
 
         public Vixen3DPreviewData Data { get; set; }

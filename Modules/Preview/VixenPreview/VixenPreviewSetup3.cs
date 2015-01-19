@@ -483,5 +483,10 @@ namespace VixenModules.Preview.VixenPreview {
             trackerZoom.Value = Convert.ToInt32(zoomPercent);
             trackerZoom.Invalidate();
         }
+
+        private void dockPanel_ActiveContentChanged(object sender, EventArgs e)
+        {
+
+        }
 	}
 }

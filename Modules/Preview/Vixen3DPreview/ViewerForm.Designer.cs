@@ -76,6 +76,7 @@
             this.MinimizeBox = false;
             this.Name = "ViewerForm";
             this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "3D Preview";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ViewerForm_FormClosing);
             this.Load += new System.EventHandler(this.Viewer_Load);
