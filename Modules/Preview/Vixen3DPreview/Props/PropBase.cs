@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using NLog.Layouts;
+using OpenTK;
 
 namespace Vixen3DPreview.Props
 {
-    public class PropBase
+    [DataContract]
+    public abstract class PropBase
     {
         private int _pixelSize = 2;
         private List<PreviewPixel> _pixels;
@@ -55,5 +59,14 @@ namespace Vixen3DPreview.Props
         
         #endregion
 
+        /// <summary>
+        /// Layout all of the pixels for this prop
+        /// </summary>
+        public abstract void Layout();
+
+        /// <summary>
+        /// Call on the mouseup event to complete the addition of a prop
+        /// </summary>
+        public abstract void CompleteAdd(Vector3 clientVectorPosition);
     }
 }

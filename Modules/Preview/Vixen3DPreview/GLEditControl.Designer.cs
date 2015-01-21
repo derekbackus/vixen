@@ -29,10 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.labelViewButton = new System.Windows.Forms.Label();
             this.labelView = new System.Windows.Forms.Label();
-            this.glControl = new OpenTK.GLControl();
             this.contextMenuStripView = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.frontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.backToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -41,20 +39,8 @@
             this.topToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.bottomToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.perspectiveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.panel1.SuspendLayout();
             this.contextMenuStripView.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // panel1
-            // 
-            this.panel1.BackColor = System.Drawing.Color.Black;
-            this.panel1.Controls.Add(this.labelViewButton);
-            this.panel1.Controls.Add(this.labelView);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(557, 26);
-            this.panel1.TabIndex = 1;
             // 
             // labelViewButton
             // 
@@ -81,18 +67,6 @@
             this.labelView.DoubleClick += new System.EventHandler(this.labelView_DoubleClick);
             this.labelView.MouseClick += new System.Windows.Forms.MouseEventHandler(this.labelView_MouseClick);
             // 
-            // glControl
-            // 
-            this.glControl.BackColor = System.Drawing.Color.Black;
-            this.glControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glControl.Location = new System.Drawing.Point(0, 26);
-            this.glControl.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.glControl.Name = "glControl";
-            this.glControl.Size = new System.Drawing.Size(557, 435);
-            this.glControl.TabIndex = 2;
-            this.glControl.VSync = false;
-            this.glControl.Load += new System.EventHandler(this.glControl_Load);
-            // 
             // contextMenuStripView
             // 
             this.contextMenuStripView.BackColor = System.Drawing.Color.Black;
@@ -107,68 +81,68 @@
             this.perspectiveToolStripMenuItem});
             this.contextMenuStripView.Name = "contextMenuStripView";
             this.contextMenuStripView.ShowImageMargin = false;
-            this.contextMenuStripView.Size = new System.Drawing.Size(151, 200);
+            this.contextMenuStripView.Size = new System.Drawing.Size(129, 172);
             this.contextMenuStripView.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.contextMenuStripView_ItemClicked);
             // 
             // frontToolStripMenuItem
             // 
             this.frontToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.frontToolStripMenuItem.Name = "frontToolStripMenuItem";
-            this.frontToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.frontToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.frontToolStripMenuItem.Text = "Front";
             // 
             // backToolStripMenuItem
             // 
             this.backToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.backToolStripMenuItem.Name = "backToolStripMenuItem";
-            this.backToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.backToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.backToolStripMenuItem.Text = "Back";
             // 
             // rightToolStripMenuItem
             // 
             this.rightToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.rightToolStripMenuItem.Name = "rightToolStripMenuItem";
-            this.rightToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.rightToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.rightToolStripMenuItem.Text = "Right";
             // 
             // leftToolStripMenuItem
             // 
             this.leftToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.leftToolStripMenuItem.Name = "leftToolStripMenuItem";
-            this.leftToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.leftToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.leftToolStripMenuItem.Text = "Left";
             // 
             // topToolStripMenuItem
             // 
             this.topToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.topToolStripMenuItem.Name = "topToolStripMenuItem";
-            this.topToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.topToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.topToolStripMenuItem.Text = "Top";
             // 
             // bottomToolStripMenuItem
             // 
             this.bottomToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.bottomToolStripMenuItem.Name = "bottomToolStripMenuItem";
-            this.bottomToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.bottomToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.bottomToolStripMenuItem.Text = "Bottom";
             // 
             // perspectiveToolStripMenuItem
             // 
             this.perspectiveToolStripMenuItem.ForeColor = System.Drawing.Color.White;
             this.perspectiveToolStripMenuItem.Name = "perspectiveToolStripMenuItem";
-            this.perspectiveToolStripMenuItem.Size = new System.Drawing.Size(153, 24);
+            this.perspectiveToolStripMenuItem.Size = new System.Drawing.Size(128, 24);
             this.perspectiveToolStripMenuItem.Text = "Perspective";
             // 
             // GLEditControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.glControl);
-            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.labelViewButton);
+            this.Controls.Add(this.labelView);
             this.Name = "GLEditControl";
             this.Size = new System.Drawing.Size(557, 461);
             this.Load += new System.EventHandler(this.GLEditControl_Load);
-            this.panel1.ResumeLayout(false);
+            this.Resize += new System.EventHandler(this.GLEditControl_Resize);
             this.contextMenuStripView.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -176,8 +150,6 @@
 
         #endregion
 
-        private System.Windows.Forms.Panel panel1;
-        private OpenTK.GLControl glControl;
         private System.Windows.Forms.Label labelViewButton;
         private System.Windows.Forms.Label labelView;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripView;

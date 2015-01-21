@@ -1490,8 +1490,10 @@ Global
 		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|x64.ActiveCfg = Release|Any CPU
-		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|x86.ActiveCfg = Release|Any CPU
+		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|x64.ActiveCfg = Release|x64
+		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|x64.Build.0 = Release|x64
+		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|x86.ActiveCfg = Release|x86
+		{7A34432D-9690-4BB6-AEF6-4CCFD996816D}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

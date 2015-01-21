@@ -5,7 +5,8 @@ using Vixen3DPreview.Props;
 
 namespace Vixen3DPreview
 {
-	[DataContract]
+    [DataContract]
+    [KnownType(typeof(Line))]
 	public class Vixen3DPreviewData : ModuleDataModelBase
 	{
         private List<PropBase> _props = new List<PropBase>(); 

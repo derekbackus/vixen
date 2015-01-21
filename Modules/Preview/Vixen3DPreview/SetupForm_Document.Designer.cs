@@ -32,8 +32,8 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.glEditControl1 = new Vixen3DPreview.GLEditControl();
-            this.glEditControl3 = new Vixen3DPreview.GLEditControl();
             this.glEditControl2 = new Vixen3DPreview.GLEditControl();
+            this.glEditControl3 = new Vixen3DPreview.GLEditControl();
             this.glEditControl4 = new Vixen3DPreview.GLEditControl();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerVert)).BeginInit();
             this.splitContainerVert.Panel1.SuspendLayout();
@@ -103,38 +103,56 @@
             // 
             // glEditControl1
             // 
+            this.glEditControl1.BackColor = System.Drawing.Color.Black;
+            this.glEditControl1.CurrentView = Vixen3DPreview.GLEditControl.ViewTypes.Front;
             this.glEditControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.glEditControl1.Location = new System.Drawing.Point(0, 0);
+            this.glEditControl1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.glEditControl1.Name = "glEditControl1";
             this.glEditControl1.Size = new System.Drawing.Size(416, 267);
-            this.glEditControl1.TabIndex = 0;
+            this.glEditControl1.TabIndex = 1;
+            this.glEditControl1.VSync = false;
             this.glEditControl1.ViewDoubleClicked += new Vixen3DPreview.ViewDoubleClickedEventHandler(this.glEditControl_ViewDoubleClicked);
-            // 
-            // glEditControl3
-            // 
-            this.glEditControl3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glEditControl3.Location = new System.Drawing.Point(0, 0);
-            this.glEditControl3.Name = "glEditControl3";
-            this.glEditControl3.Size = new System.Drawing.Size(342, 230);
-            this.glEditControl3.TabIndex = 0;
-            this.glEditControl3.ViewDoubleClicked += new Vixen3DPreview.ViewDoubleClickedEventHandler(this.glEditControl_ViewDoubleClicked);
+            this.glEditControl1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glEditControl_MouseDown);
+            this.glEditControl1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glEditControl_MouseUp);
             // 
             // glEditControl2
             // 
+            this.glEditControl2.BackColor = System.Drawing.Color.Black;
+            this.glEditControl2.CurrentView = Vixen3DPreview.GLEditControl.ViewTypes.Front;
             this.glEditControl2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.glEditControl2.Location = new System.Drawing.Point(0, 0);
+            this.glEditControl2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.glEditControl2.Name = "glEditControl2";
             this.glEditControl2.Size = new System.Drawing.Size(606, 267);
             this.glEditControl2.TabIndex = 0;
+            this.glEditControl2.VSync = false;
             this.glEditControl2.ViewDoubleClicked += new Vixen3DPreview.ViewDoubleClickedEventHandler(this.glEditControl_ViewDoubleClicked);
+            // 
+            // glEditControl3
+            // 
+            this.glEditControl3.BackColor = System.Drawing.Color.Black;
+            this.glEditControl3.CurrentView = Vixen3DPreview.GLEditControl.ViewTypes.Front;
+            this.glEditControl3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.glEditControl3.Location = new System.Drawing.Point(0, 0);
+            this.glEditControl3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.glEditControl3.Name = "glEditControl3";
+            this.glEditControl3.Size = new System.Drawing.Size(342, 230);
+            this.glEditControl3.TabIndex = 0;
+            this.glEditControl3.VSync = false;
+            this.glEditControl3.ViewDoubleClicked += new Vixen3DPreview.ViewDoubleClickedEventHandler(this.glEditControl_ViewDoubleClicked);
             // 
             // glEditControl4
             // 
+            this.glEditControl4.BackColor = System.Drawing.Color.Black;
+            this.glEditControl4.CurrentView = Vixen3DPreview.GLEditControl.ViewTypes.Front;
             this.glEditControl4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.glEditControl4.Location = new System.Drawing.Point(0, 0);
+            this.glEditControl4.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.glEditControl4.Name = "glEditControl4";
             this.glEditControl4.Size = new System.Drawing.Size(680, 230);
             this.glEditControl4.TabIndex = 0;
+            this.glEditControl4.VSync = false;
             this.glEditControl4.ViewDoubleClicked += new Vixen3DPreview.ViewDoubleClickedEventHandler(this.glEditControl_ViewDoubleClicked);
             // 
             // SetupForm_Document
@@ -171,9 +189,9 @@
         private System.Windows.Forms.SplitContainer splitContainerVert;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private GLEditControl glEditControl1;
         private GLEditControl glEditControl3;
         private GLEditControl glEditControl2;
         private GLEditControl glEditControl4;
+        private GLEditControl glEditControl1;
     }
 }

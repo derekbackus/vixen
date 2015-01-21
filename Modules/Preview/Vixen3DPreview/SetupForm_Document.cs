@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Vixen3DPreview.Props;
 using WeifenLuo.WinFormsUI.Docking;
 
 namespace Vixen3DPreview
@@ -28,9 +29,12 @@ namespace Vixen3DPreview
         {
             InitializeComponent();
             Data = data;
+            SetupForm = (Parent as SetupForm);
         }
 
         private Vixen3DPreviewData Data { get; set; }
+
+        private SetupForm SetupForm { get; set; }
 
         private DocumentLayoutType DocumentLayout
         {
@@ -43,7 +47,7 @@ namespace Vixen3DPreview
 
         private void SetupForm_Document_Load(object sender, EventArgs e)
         {
-            splitContainerVert.SplitterDistance = splitContainerVert.Height/2;
+            splitContainerVert.SplitterDistance = splitContainerVert.Height / 2;
             splitContainer1.SplitterDistance = splitContainer1.Width/2;
             splitContainer2.SplitterDistance = splitContainer1.SplitterDistance;
 
@@ -108,6 +112,24 @@ namespace Vixen3DPreview
                 splitContainer2.Panel1Collapsed = !splitContainer2.Panel1Collapsed;
                 splitContainerVert.Panel1Collapsed = splitContainer2.Panel1Collapsed;
             }
+        }
+
+        private PropBase _currentProp;
+        private GLEditControl _currentGLEditControl;
+        private void glEditControl_MouseDown(object sender, MouseEventArgs e)
+        {
+            _currentGLEditControl = glEditControl1;
+            _currentProp = new Line(null, _currentGLEditControl.GetMousePosition());
+            Console.WriteLine("MouseDown: " + _currentProp + ":" + _currentGLEditControl.GetMousePosition().Xzy.ToString());
+            _currentGLEditControl.Capture = true;
+        }
+
+        private void glEditControl_MouseUp(object sender, MouseEventArgs e)
+        {
+            Console.WriteLine("MouseUp: " + _currentProp + ":" + _currentGLEditControl.GetMousePosition().Xzy.ToString());
+            glEditControl1.Capture = false;
+            _currentProp.CompleteAdd(_currentGLEditControl.GetMousePosition());
+            Data.Props.Add(_currentProp);
         }
 
     }
