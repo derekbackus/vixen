@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using Vixen.Sys;
 using WeifenLuo.WinFormsUI.Docking;
 
-namespace Vixen3DPreview
+namespace VixenModules.Preview.Vixen3DPreview
 {
     public partial class SetupForm_Elements : DockContent
     {
@@ -50,6 +50,22 @@ namespace Vixen3DPreview
             foreach (ElementNode childNode in channelNode.Children)
             {
                 AddNodeToElementTree(addedNode.Nodes, childNode);
+            }
+        }
+
+        public ElementNode SelectedNode
+        {
+            get
+            {
+                var treeNode = treeElements.SelectedNode;
+                if (treeNode != null)
+                {
+                    return (treeNode.Tag as ElementNode);
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
     }

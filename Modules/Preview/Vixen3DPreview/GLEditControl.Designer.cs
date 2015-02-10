@@ -1,4 +1,4 @@
-﻿namespace Vixen3DPreview
+﻿namespace VixenModules.Preview.Vixen3DPreview
 {
     partial class GLEditControl
     {
@@ -137,11 +137,17 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.Black;
             this.Controls.Add(this.labelViewButton);
             this.Controls.Add(this.labelView);
+            this.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
             this.Name = "GLEditControl";
             this.Size = new System.Drawing.Size(557, 461);
             this.Load += new System.EventHandler(this.GLEditControl_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.GLEditControl_KeyDown);
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.GLEditControl_MouseDown);
+            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.GLEditControl_MouseMove);
+            this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.GLEditControl_MouseUp);
             this.Resize += new System.EventHandler(this.GLEditControl_Resize);
             this.contextMenuStripView.ResumeLayout(false);
             this.ResumeLayout(false);

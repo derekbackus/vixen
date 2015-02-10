@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using WeifenLuo.WinFormsUI.Docking;
 
-namespace Vixen3DPreview
+namespace VixenModules.Preview.Vixen3DPreview
 {
     public partial class SetupForm_Properties : DockContent
     {

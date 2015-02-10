@@ -7,7 +7,7 @@
     <ProjectGuid>{7A34432D-9690-4BB6-AEF6-4CCFD996816D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Vixen3DPreview</RootNamespace>
+    <RootNamespace>VixenModules.Preview.Vixen3DPreview</RootNamespace>
     <AssemblyName>Vixen3DPreview</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -72,6 +72,9 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Color">
+      <HintPath>..\..\..\Release\Modules\Property\Color.dll</HintPath>
+    </Reference>
     <Reference Include="Controls">
       <HintPath>..\..\..\Common\Controls\obj\x86\Release\Controls.dll</HintPath>
       <Private>False</Private>
@@ -122,6 +125,8 @@
     </Compile>
     <Compile Include="IDisplayForm.cs" />
     <Compile Include="MenuRenderer.cs" />
+    <Compile Include="PreviewUtils.cs" />
+    <Compile Include="Props\Matrix.cs" />
     <Compile Include="Props\PropBase.cs" />
     <Compile Include="Props\Line.cs" />
     <Compile Include="Props\PreviewPixel.cs" />
@@ -156,6 +161,7 @@
     <Compile Include="ViewerForm.Designer.cs">
       <DependentUpon>ViewerForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Vixen3DPreviewPrivateData.cs" />
     <Compile Include="Vixen3DPreviewData.cs" />
     <Compile Include="Vixen3DPreviewDescriptor.cs" />
     <Compile Include="Vixen3DPreviewModuleInstance.cs" />

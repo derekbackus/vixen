@@ -1,4 +1,4 @@
-﻿namespace Vixen3DPreview
+﻿namespace VixenModules.Preview.Vixen3DPreview
 {
     partial class SetupForm_Properties
     {

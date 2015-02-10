@@ -7,7 +7,7 @@ using Vixen.Sys;
 using Vixen.Module.Preview;
 using Vixen.Sys.Attribute;
 
-namespace Vixen3DPreview
+namespace VixenModules.Preview.Vixen3DPreview
 {
 	public class Vixen3DPreviewDescriptor : PreviewModuleDescriptorBase
 	{

@@ -113,7 +113,8 @@ namespace Common.Controls
 		{
 			Profiles,
 			AppSettings,
-			Preferences
+			Preferences,
+            Preview
 		};
 		
 	}

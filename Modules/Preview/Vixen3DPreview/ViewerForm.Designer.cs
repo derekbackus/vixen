@@ -1,4 +1,4 @@
-﻿namespace Vixen3DPreview
+﻿namespace VixenModules.Preview.Vixen3DPreview
 {
     partial class ViewerForm
     {
@@ -29,23 +29,11 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ViewerForm));
-            this.glControl = new OpenTK.GLControl();
             this.statusStrip = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabelFPS = new System.Windows.Forms.ToolStripStatusLabel();
+            this.glControl = new VixenModules.Preview.Vixen3DPreview.GLEditControl();
             this.statusStrip.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // glControl
-            // 
-            this.glControl.BackColor = System.Drawing.Color.Black;
-            this.glControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glControl.Location = new System.Drawing.Point(0, 0);
-            this.glControl.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.glControl.Name = "glControl";
-            this.glControl.Size = new System.Drawing.Size(921, 470);
-            this.glControl.TabIndex = 0;
-            this.glControl.VSync = false;
-            this.glControl.Load += new System.EventHandler(this.glControl_Load);
             // 
             // statusStrip
             // 
@@ -64,6 +52,35 @@
             this.toolStripStatusLabelFPS.Name = "toolStripStatusLabelFPS";
             this.toolStripStatusLabelFPS.Size = new System.Drawing.Size(45, 24);
             this.toolStripStatusLabelFPS.Text = "0 fps";
+            // 
+            // glControl
+            // 
+            this.glControl.BackColor = System.Drawing.Color.Black;
+            this.glControl.CurrentView = VixenModules.Preview.Vixen3DPreview.GLEditControl.ViewTypes.Front;
+            this.glControl.Data = null;
+            this.glControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.glControl.Editing = false;
+            this.glControl.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.glControl.Location = new System.Drawing.Point(0, 0);
+            this.glControl.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.glControl.Name = "glControl";
+            this.glControl.OriginLength = 30F;
+            this.glControl.OriginThickness = 2F;
+            this.glControl.PanX = 0F;
+            this.glControl.PanY = 0F;
+            this.glControl.ShowBoundingBox = true;
+            this.glControl.ShowOrigin = true;
+            this.glControl.Size = new System.Drawing.Size(921, 470);
+            this.glControl.TabIndex = 0;
+            this.glControl.VSync = false;
+            this.glControl.WorldDepth = 300F;
+            this.glControl.WorldHeight = 300F;
+            this.glControl.WorldWidth = 300F;
+            this.glControl.ZoomLevel = 1F;
+            this.glControl.Load += new System.EventHandler(this.glControl_Load);
+            this.glControl.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glControl_MouseDown);
+            this.glControl.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glControl_MouseMove);
+            this.glControl.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glControl_MouseUp);
             // 
             // ViewerForm
             // 
@@ -91,7 +108,7 @@
 
         #endregion
 
-        private OpenTK.GLControl glControl;
+        private GLEditControl glControl;
         private System.Windows.Forms.StatusStrip statusStrip;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelFPS;
     }

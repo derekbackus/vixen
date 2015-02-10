@@ -6,7 +6,7 @@ using Vixen.Module.Preview;
 using Vixen.Sys;
 using Vixen.Sys.Instrumentation;
 
-namespace Vixen3DPreview
+namespace VixenModules.Preview.Vixen3DPreview
 {
 	public partial class Vixen3DPreviewModuleInstance : FormPreviewModuleInstanceBase
 	{
@@ -82,10 +82,11 @@ namespace Vixen3DPreview
 			}
 		}
 
-		private Vixen3DPreviewData GetDataModel()
+		private Vixen3DPreviewPrivateData GetDataModel()
 		{
-			return ModuleData as Vixen3DPreviewData;
-		}
+		    var moduleData = (ModuleData as Vixen3DPreviewData);
+            return moduleData.PrivateData;
+        }
 
 		public override void Start()
 		{
@@ -95,9 +96,10 @@ namespace Vixen3DPreview
 
 		public override bool Setup()
 		{
+            Console.WriteLine("Setup 1");
 			_setupForm = new SetupForm(GetDataModel());
-
-			_setupForm.ShowDialog();
+            Console.WriteLine("Setup 2");
+            _setupForm.ShowDialog();
 
 			if (_displayForm != null)
 			{

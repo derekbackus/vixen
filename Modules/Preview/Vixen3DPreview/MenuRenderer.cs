@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Vixen3DPreview
+namespace VixenModules.Preview.Vixen3DPreview
 {
     public class MyMenuRenderer : ToolStripProfessionalRenderer
     {

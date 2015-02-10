@@ -7,22 +7,30 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Media;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System.Diagnostics;
+using Vixen.Data.Flow;
+using Vixen.Sys;
+using System.Collections.Concurrent;
+using VixenModules.Preview.Vixen3DPreview.Props;
+using Color = System.Drawing.Color;
 
-namespace Vixen3DPreview
+namespace VixenModules.Preview.Vixen3DPreview
 {
     public partial class ViewerForm : Form, IDisplayForm
     {
         private static NLog.Logger Logging = NLog.LogManager.GetCurrentClassLogger();
         private bool _glLoaded = false;
         Stopwatch _fpsStopwatch = new Stopwatch();
+        PreviewUtils _utils = new PreviewUtils();
+        public ConcurrentDictionary<ElementNode, List<PreviewPixel>> NodeToPixel = new ConcurrentDictionary<ElementNode, List<PreviewPixel>>();
 
-        public ViewerForm(Vixen3DPreviewData data)
+        public ViewerForm(Vixen3DPreviewPrivateData data)
         {
-            InitializeComponent();
             Data = data;
+            InitializeComponent();
         }
 
         #region "Window closing and resize"
@@ -55,8 +63,8 @@ namespace Vixen3DPreview
                 return;
             }
 
-            Data.Width = Width;
-            Data.Height = Height;
+            _utils.SavePrivateSetting("ViewerWidth", Width);
+            _utils.SavePrivateSetting("ViewerHeight", Height);
         }
 
         private void ViewerForm_Move(object sender, EventArgs e)
@@ -68,8 +76,8 @@ namespace Vixen3DPreview
                 return;
             }
 
-            Data.Top = Top;
-            Data.Left = Left;
+            _utils.SavePrivateSetting("ViewerTop", Top);
+            _utils.SavePrivateSetting("ViewerLeft", Left);
         }
 
         private void SetupWindowLocation()
@@ -82,33 +90,23 @@ namespace Vixen3DPreview
 
             // avoid 0 with/height in case Data comes in 'bad' -- even small is bad,
             // as it doesn't give a sizeable enough canvas to render on.
-            if (Data.Width < 100)
-            {
-                Data.Width = 400;
-            }
+            if (_utils.GetPrivateSetting("ViewerWidth", 100) < 100)
+                _utils.SavePrivateSetting("ViewerWidth", 100);
 
-            if (Data.SetupWidth < 200)
-            {
-                Data.SetupWidth = 400;
-            }
+            if (_utils.GetPrivateSetting("ViewerHeight", 100) < 100)
+                _utils.SavePrivateSetting("ViewerHeight", 100);
 
-            if (Data.Height < 100)
-            {
-                Data.Height = 300;
-            }
+            var left = _utils.GetPrivateSetting("ViewerLeft", 0);
+            if (left < minX || left > maxX)
+                _utils.SavePrivateSetting("ViewerLeft", 0);
 
-            if (Data.SetupHeight < 200)
-            {
-                Data.SetupHeight = 300;
-            }
+            var top = _utils.GetPrivateSetting("ViewerTop", 0);
+            if (top < minY || top > maxY)
+            _utils.SavePrivateSetting("ViewerTop", 0);
 
-            if (Data.Left < minX || Data.Left > maxX)
-                Data.Left = 0;
-            if (Data.Top < minY || Data.Top > maxY)
-                Data.Top = 0;
-
-            SetDesktopLocation(Data.Left, Data.Top);
-            Size = new Size(Data.Width, Data.Height);
+            // Set the window location and size before other things get created
+            SetDesktopLocation(_utils.GetPrivateSetting("ViewerLeft", 0), _utils.GetPrivateSetting("ViewerTop", 0));
+            Size = new Size(_utils.GetPrivateSetting("ViewerWidth", 640), _utils.GetPrivateSetting("ViewerHeight", 400));
         }
 
         #endregion
@@ -139,17 +137,83 @@ namespace Vixen3DPreview
 
         #endregion
 
-        public Vixen3DPreviewData Data { get; set; }
+        public Vixen3DPreviewPrivateData Data { get; set; }
 
         private void glControl_Load(object sender, EventArgs e)
         {
             _glLoaded = true;
+            glControl.Data = Data;
+            glControl.Editing = false;
             SetupOpenGL();
+            SetupWorld();
+            Reload();
             _fpsStopwatch.Start();
+        }
+
+        private void SetupWorld()
+        {
+            glControl.WorldWidth = 12*100;
+            glControl.WorldHeight = 12*20;
+            glControl.WorldDepth = 12*75;
         }
 
         private void Viewer_Load(object sender, EventArgs e)
         {
+        }
+
+        public void Reload()
+        {
+            if (NodeToPixel == null)
+                throw new System.ArgumentException("PreviewBase.NodeToPixel == null");
+
+            NodeToPixel.Clear();
+
+            if (Data.Props == null)
+                throw new System.ArgumentException("Props == null");
+
+            //Console.WriteLine("Reload");
+            if (Data.Props != null)
+            {
+                //Console.WriteLine("Props != null");
+                int pixelCount = 0;
+                //Console.Write("Prop Count: " + Data.Props.Count);
+                foreach (PropBase prop in Data.Props)
+                {
+                    //Console.WriteLine("Do Prop");
+                    prop.Layout();
+                    if (prop.Pixels == null)
+                        throw new System.ArgumentException("prop.Pixels == null");
+
+                    foreach (PreviewPixel pixel in prop.Pixels)
+                    {
+                        if (pixel.Node != null)
+                        {
+                            //Console.WriteLine("pixe.Node != null, adding: " + pixel.Node.Id);
+                            pixelCount++;
+                            //Console.WriteLine("pixels.Node.ID: " + pixel.Node.Id);
+                            List<PreviewPixel> pixels;
+                            if (NodeToPixel.TryGetValue(pixel.Node, out pixels))
+                            {
+                                if (!pixels.Contains(pixel))
+                                {
+                                    pixels.Add(pixel);
+                                }
+                            }
+                            else
+                            {
+                                pixels = new List<PreviewPixel>();
+                                //Console.WriteLine("pixels.Add: " + pixel.Node.Id);
+                                pixels.Add(pixel);
+                                NodeToPixel.TryAdd(pixel.Node, pixels);
+                            }
+                        }
+                        else
+                        {
+                            //Console.WriteLine("pixe.Node == null");
+                        }
+                    }
+                }
+            }
         }
 
         public void Setup()
@@ -159,9 +223,9 @@ namespace Vixen3DPreview
 
         private void SetupOpenGL()
         {
-            if (!_glLoaded) return;
-            glControl.MakeCurrent();
-            GL.ClearColor(Color.Black);
+            //if (!_glLoaded) return;
+            //glControl.MakeCurrent();
+            //GL.ClearColor(Color.Black);
         }
 
         public void UpdatePreview()
@@ -170,15 +234,84 @@ namespace Vixen3DPreview
 
             DisplayFPS();
 
-            glControl.MakeCurrent();
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            
-            glControl.SwapBuffers();            
+            //glControl.MakeCurrent();
+            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            IEnumerable<Element> elementArray = VixenSystem.Elements.Where(e => e.State.Any());
+            if (!elementArray.Any())
+            {
+            }
+
+            try
+            {
+                glControl.StartRender();
+                var po = new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = Environment.ProcessorCount
+                };
+
+                //Console.WriteLine("1");
+                //Parallel.ForEach(elementArray, po, element =>
+                foreach (var element in elementArray)
+                {
+                    ElementNode node = VixenSystem.Elements.GetElementNodeForElement(element);
+                    //Console.WriteLine("2");
+                    if (node != null)
+                    {
+                        List<PreviewPixel> pixels;
+                        //Console.WriteLine("Looking for NodeToPixel: " + NodeToPixel.Count());
+                        if (NodeToPixel.TryGetValue(node, out pixels))
+                        {
+                            //Console.WriteLine("Found NodeToPixel");
+                            foreach (PreviewPixel pixel in pixels)
+                            {
+                                //pixel.SetColorsFromIntents(element.State);
+                                glControl.DrawPixel(pixel, element.State);
+                                //pixel.Draw(gdiControl.FastPixel, element.State);
+                                //pixel.Color = element.State
+                            }
+                        }
+                    }
+                    //});
+                }
+            }
+            catch (Exception e)
+            {
+                Logging.Error(e.Message, e);
+            }
+            finally
+            {
+                glControl.EndRender();
+            }
+
+            //glControl.Render();
+            //glControl.SwapBuffers();
+
         }
 
+        private void glControl_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Middle)
+            {
+                glControl.StartPan();
+            }
+        }
 
+        private void glControl_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Middle)
+            {
+                glControl.Pan();
+            }
+        }
 
-
+        private void glControl_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Middle)
+            {
+                glControl.EndPan();
+            }
+        }
 
     }
 }
